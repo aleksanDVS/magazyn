@@ -3,7 +3,7 @@ import pandas as pd
 
 # ==========================================================
 # 🛑 LOKALIZACJA NR 1: Konfiguracja Strony (MUSI BYĆ NA WIERZCHU)
-# Ta funkcja musi być pierwszą komendą Streamlit.
+# Zostawiamy ją tutaj, ale dodajemy główne wywołanie na końcu pliku.
 # ==========================================================
 st.set_page_config(layout="wide", title="Prosty Magazyn Towarów")
 
@@ -14,7 +14,6 @@ def add_item(name, quantity, price):
     new_data = {'Nazwa Towaru': [name], 'Ilość': [quantity], 'Cena (PLN)': [price]}
     new_df = pd.DataFrame(new_data)
     
-    # Łączenie z istniejącymi danymi
     st.session_state.inventory = pd.concat(
         [st.session_state.inventory, new_df], 
         ignore_index=True
@@ -24,7 +23,6 @@ def add_item(name, quantity, price):
 def remove_item(index_to_remove):
     """Usuwa towar na podstawie jego indeksu."""
     try:
-        # Pamiętaj, że reset_index(drop=True) jest kluczowe dla poprawności indeksów
         st.session_state.inventory = st.session_state.inventory.drop(
             st.session_state.inventory.index[index_to_remove]
         ).reset_index(drop=True)
@@ -34,90 +32,94 @@ def remove_item(index_to_remove):
 
 
 # ==========================================================
-# 🛑 LOKALIZACJA NR 2: Inicjalizacja Stanu Sesji
-# To może być zaraz po konfiguracji, ale nie przed nią.
+# GŁÓWNA FUNKCJA APLIKACJI
 # ==========================================================
-if 'inventory' not in st.session_state:
-    st.session_state.inventory = pd.DataFrame(columns=['Nazwa Towaru', 'Ilość', 'Cena (PLN)'])
-
-
-# --- Interfejs Użytkownika Streamlit ---
-
-st.title("📦 Prosty Magazyn Towarów v1.0")
-st.markdown("Aplikacja do zarządzania zapasami w magazynie (Dodawanie, Usuwanie, Wyświetlanie).")
-
-st.markdown("---")
-
-# 1. Panel Dodawania Towaru
-with st.expander("➕ DODAJ NOWY TOWAR", expanded=True):
-    st.header("Wprowadź dane nowego towaru")
+def main():
     
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        new_name = st.text_input("Nazwa Towaru", key="new_name")
-    with col2:
-        new_quantity = st.number_input("Ilość", min_value=1, value=1, step=1, key="new_quantity")
-    with col3:
-        new_price = st.number_input("Cena jednostkowa (PLN)", min_value=0.01, value=10.00, step=0.50, key="new_price")
-    
-    if st.button("Dodaj do Magazynu", key="add_btn"):
-        if new_name:
-            add_item(new_name, new_quantity, new_price)
-        else:
-            st.error("Proszę podać nazwę towaru.")
+    # Inicjalizacja stanu magazynu (przeniesiona do funkcji, ale musi działać)
+    if 'inventory' not in st.session_state:
+        st.session_state.inventory = pd.DataFrame(columns=['Nazwa Towaru', 'Ilość', 'Cena (PLN)'])
 
-st.markdown("---")
+    # --- Interfejs Użytkownika Streamlit ---
 
-# 2. Wyświetlanie Magazynu
-st.header("📊 Aktualny Stan Magazynu")
+    st.title("📦 Prosty Magazyn Towarów v1.0")
+    st.markdown("Aplikacja do zarządzania zapasami w magazynie (Dodawanie, Usuwanie, Wyświetlanie).")
 
-if st.session_state.inventory.empty:
-    st.info("Magazyn jest pusty. Dodaj pierwszy towar powyżej!")
-else:
-    # Przygotowanie DataFrame do wyświetlenia (dodanie kolumny Index)
-    display_df = st.session_state.inventory.copy()
-    display_df['Index'] = display_df.index
-    
-    # Zmieniamy kolejność kolumn
-    display_df = display_df[['Index', 'Nazwa Towaru', 'Ilość', 'Cena (PLN)']]
-    
-    # Wyświetlenie tabeli z formatowaniem cen
-    st.dataframe(
-        display_df.style.format({'Cena (PLN)': "pln {:.2f}"}), 
-        hide_index=True,
-        use_container_width=True
-    )
+    st.markdown("---")
 
-    # Obliczenia podsumowujące
-    total_items = st.session_state.inventory['Ilość'].sum()
-    total_value = (st.session_state.inventory['Ilość'] * st.session_state.inventory['Cena (PLN)']).sum()
-    
-    col_sum1, col_sum2 = st.columns(2)
-    col_sum1.metric("Łączna Liczba Towarów", f"{total_items} szt.")
-    col_sum2.metric("Łączna Wartość Magazynu", f"{total_value:.2f} PLN")
-
-st.markdown("---")
-
-# 3. Panel Usuwania Towaru
-if not st.session_state.inventory.empty:
-    with st.expander("➖ USUŃ TOWAR", expanded=False):
-        st.subheader("Usuń towar po numerze Index")
+    # 1. Panel Dodawania Towaru
+    with st.expander("➕ DODAJ NOWY TOWAR", expanded=True):
+        st.header("Wprowadź dane nowego towaru")
         
-        max_index = len(st.session_state.inventory) - 1
+        col1, col2, col3 = st.columns(3)
         
-        index_to_remove = st.number_input(
-            "Wprowadź Index towaru do usunięcia (patrz tabela powyżej)", 
-            min_value=0, 
-            max_value=max_index, 
-            step=1, 
-            key="remove_index"
+        with col1:
+            new_name = st.text_input("Nazwa Towaru", key="new_name")
+        with col2:
+            new_quantity = st.number_input("Ilość", min_value=1, value=1, step=1, key="new_quantity")
+        with col3:
+            new_price = st.number_input("Cena jednostkowa (PLN)", min_value=0.01, value=10.00, step=0.50, key="new_price")
+        
+        if st.button("Dodaj do Magazynu", key="add_btn"):
+            if new_name:
+                add_item(new_name, new_quantity, new_price)
+            else:
+                st.error("Proszę podać nazwę towaru.")
+
+    st.markdown("---")
+
+    # 2. Wyświetlanie Magazynu
+    st.header("📊 Aktualny Stan Magazynu")
+
+    if st.session_state.inventory.empty:
+        st.info("Magazyn jest pusty. Dodaj pierwszy towar powyżej!")
+    else:
+        # Przygotowanie DataFrame do wyświetlenia (dodanie kolumny Index)
+        display_df = st.session_state.inventory.copy()
+        display_df['Index'] = display_df.index
+        
+        # Zmieniamy kolejność kolumn
+        display_df = display_df[['Index', 'Nazwa Towaru', 'Ilość', 'Cena (PLN)']]
+        
+        # Wyświetlenie tabeli z formatowaniem cen
+        st.dataframe(
+            display_df.style.format({'Cena (PLN)': "pln {:.2f}"}), 
+            hide_index=True,
+            use_container_width=True
         )
-        
-        # Wizualne potwierdzenie, co zostanie usunięte
-        if index_to_remove <= max_index:
-             st.info(f"Wybrano do usunięcia: **{st.session_state.inventory.loc[index_to_remove, 'Nazwa Towaru']}**")
 
-        if st.button("Usuń Towar", key="remove_btn"):
-            remove_item(index_to_remove)
-            st.rerun() # Wymuszenie odświeżenia po usunięciu
+        # Obliczenia podsumowujące
+        total_items = st.session_state.inventory['Ilość'].sum()
+        total_value = (st.session_state.inventory['Ilość'] * st.session_state.inventory['Cena (PLN)']).sum()
+        
+        col_sum1, col_sum2 = st.columns(2)
+        col_sum1.metric("Łączna Liczba Towarów", f"{total_items} szt.")
+        col_sum2.metric("Łączna Wartość Magazynu", f"{total_value:.2f} PLN")
+
+    st.markdown("---")
+
+    # 3. Panel Usuwania Towaru
+    if not st.session_state.inventory.empty:
+        with st.expander("➖ USUŃ TOWAR", expanded=False):
+            st.subheader("Usuń towar po numerze Index")
+            
+            max_index = len(st.session_state.inventory) - 1
+            
+            index_to_remove = st.number_input(
+                "Wprowadź Index towaru do usunięcia (patrz tabela powyżej)", 
+                min_value=0, 
+                max_value=max_index, 
+                step=1, 
+                key="remove_index"
+            )
+            
+            if index_to_remove <= max_index:
+                 st.info(f"Wybrano do usunięcia: **{st.session_state.inventory.loc[index_to_remove, 'Nazwa Towaru']}**")
+
+            if st.button("Usuń Towar", key="remove_btn"):
+                remove_item(index_to_remove)
+                st.rerun() 
+
+# --- WYWOŁANIE GŁÓWNEJ FUNKCJI ---
+if __name__ == "__main__":
+    main()
