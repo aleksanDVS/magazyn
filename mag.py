@@ -1,25 +1,20 @@
 import streamlit as st
 import pandas as pd
-# import numpy as np # Jeśli używasz
 
 # ==========================================================
-# 🛑 WŁAŚCIWE MIEJSCE DLA st.set_page_config() - NAJWYŻEJ!
+# 🛑 LOKALIZACJA NR 1: Konfiguracja Strony (MUSI BYĆ NA WIERZCHU)
+# Ta funkcja musi być pierwszą komendą Streamlit.
 # ==========================================================
 st.set_page_config(layout="wide", title="Prosty Magazyn Towarów")
 
-# --- Reszta kodu (Funkcje i Logika) zaczyna się tutaj ---
+# --- Funkcje Zarządzania Magazynem ---
 
-# Inicjalizacja stanu magazynu
-if 'inventory' not in st.session_state:
-    st.session_state.inventory = pd.DataFrame(columns=['Nazwa Towaru', 'Ilość', 'Cena (PLN)'])
-
-# Funkcje zarządzania magazynem (add_item, remove_item)
 def add_item(name, quantity, price):
-    # Tworzenie nowego wiersza danych
+    """Dodaje nowy towar do magazynu."""
     new_data = {'Nazwa Towaru': [name], 'Ilość': [quantity], 'Cena (PLN)': [price]}
     new_df = pd.DataFrame(new_data)
     
-    # Łączenie z istniejącymi danymi w st.session_state
+    # Łączenie z istniejącymi danymi
     st.session_state.inventory = pd.concat(
         [st.session_state.inventory, new_df], 
         ignore_index=True
@@ -27,15 +22,23 @@ def add_item(name, quantity, price):
     st.success(f"Dodano: {name} (Ilość: {quantity})")
 
 def remove_item(index_to_remove):
-    """Usuwa towar na podstawie jego indeksu (numeru wiersza w tabeli)."""
+    """Usuwa towar na podstawie jego indeksu."""
     try:
-        # Usuwamy wiersz z DataFrame na podstawie globalnego indeksu
+        # Pamiętaj, że reset_index(drop=True) jest kluczowe dla poprawności indeksów
         st.session_state.inventory = st.session_state.inventory.drop(
             st.session_state.inventory.index[index_to_remove]
         ).reset_index(drop=True)
         st.warning(f"Usunięto towar o indeksie: {index_to_remove}")
     except IndexError:
         st.error("Błąd: Nieprawidłowy numer indeksu do usunięcia.")
+
+
+# ==========================================================
+# 🛑 LOKALIZACJA NR 2: Inicjalizacja Stanu Sesji
+# To może być zaraz po konfiguracji, ale nie przed nią.
+# ==========================================================
+if 'inventory' not in st.session_state:
+    st.session_state.inventory = pd.DataFrame(columns=['Nazwa Towaru', 'Ilość', 'Cena (PLN)'])
 
 
 # --- Interfejs Użytkownika Streamlit ---
@@ -72,15 +75,14 @@ st.header("📊 Aktualny Stan Magazynu")
 if st.session_state.inventory.empty:
     st.info("Magazyn jest pusty. Dodaj pierwszy towar powyżej!")
 else:
-    # Wyświetlenie tabeli z danymi
+    # Przygotowanie DataFrame do wyświetlenia (dodanie kolumny Index)
     display_df = st.session_state.inventory.copy()
-    display_df.index = display_df.index.rename('Index')
     display_df['Index'] = display_df.index
     
     # Zmieniamy kolejność kolumn
     display_df = display_df[['Index', 'Nazwa Towaru', 'Ilość', 'Cena (PLN)']]
     
-    # Stosujemy formatowanie dla kolumny Ceny
+    # Wyświetlenie tabeli z formatowaniem cen
     st.dataframe(
         display_df.style.format({'Cena (PLN)': "pln {:.2f}"}), 
         hide_index=True,
@@ -112,9 +114,10 @@ if not st.session_state.inventory.empty:
             key="remove_index"
         )
         
+        # Wizualne potwierdzenie, co zostanie usunięte
         if index_to_remove <= max_index:
              st.info(f"Wybrano do usunięcia: **{st.session_state.inventory.loc[index_to_remove, 'Nazwa Towaru']}**")
 
         if st.button("Usuń Towar", key="remove_btn"):
             remove_item(index_to_remove)
-            st.rerun()
+            st.rerun() # Wymuszenie odświeżenia po usunięciu
