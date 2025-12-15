@@ -1,19 +1,20 @@
 import streamlit as st
 import pandas as pd
+# import numpy as np # Jeśli używasz
 
-# --- Ustawienia Strony i Stan Sesji ---
+# ==========================================================
+# 🛑 WŁAŚCIWE MIEJSCE DLA st.set_page_config() - NAJWYŻEJ!
+# ==========================================================
 st.set_page_config(layout="wide", title="Prosty Magazyn Towarów")
 
+# --- Reszta kodu (Funkcje i Logika) zaczyna się tutaj ---
+
 # Inicjalizacja stanu magazynu
-# Używamy st.session_state do przechowywania danych, aby były trwałe
-# podczas interakcji użytkownika.
 if 'inventory' not in st.session_state:
     st.session_state.inventory = pd.DataFrame(columns=['Nazwa Towaru', 'Ilość', 'Cena (PLN)'])
 
-# --- Funkcje Zarządzania Magazynem ---
-
+# Funkcje zarządzania magazynem (add_item, remove_item)
 def add_item(name, quantity, price):
-    """Dodaje nowy towar do magazynu."""
     # Tworzenie nowego wiersza danych
     new_data = {'Nazwa Towaru': [name], 'Ilość': [quantity], 'Cena (PLN)': [price]}
     new_df = pd.DataFrame(new_data)
@@ -53,10 +54,8 @@ with st.expander("➕ DODAJ NOWY TOWAR", expanded=True):
     with col1:
         new_name = st.text_input("Nazwa Towaru", key="new_name")
     with col2:
-        # st.number_input zapewnia, że wprowadzane są tylko liczby całkowite i są >= 0
         new_quantity = st.number_input("Ilość", min_value=1, value=1, step=1, key="new_quantity")
     with col3:
-        # Cena może być zmiennoprzecinkowa
         new_price = st.number_input("Cena jednostkowa (PLN)", min_value=0.01, value=10.00, step=0.50, key="new_price")
     
     if st.button("Dodaj do Magazynu", key="add_btn"):
@@ -74,7 +73,6 @@ if st.session_state.inventory.empty:
     st.info("Magazyn jest pusty. Dodaj pierwszy towar powyżej!")
 else:
     # Wyświetlenie tabeli z danymi
-    # Dodajemy kolumnę Index dla ułatwienia usuwania
     display_df = st.session_state.inventory.copy()
     display_df.index = display_df.index.rename('Index')
     display_df['Index'] = display_df.index
@@ -104,7 +102,6 @@ if not st.session_state.inventory.empty:
     with st.expander("➖ USUŃ TOWAR", expanded=False):
         st.subheader("Usuń towar po numerze Index")
         
-        # Wybór numeru indeksu (wiersza) do usunięcia
         max_index = len(st.session_state.inventory) - 1
         
         index_to_remove = st.number_input(
@@ -115,10 +112,9 @@ if not st.session_state.inventory.empty:
             key="remove_index"
         )
         
-        # Kontrola, czy wybrany indeks jest poprawny
         if index_to_remove <= max_index:
              st.info(f"Wybrano do usunięcia: **{st.session_state.inventory.loc[index_to_remove, 'Nazwa Towaru']}**")
 
         if st.button("Usuń Towar", key="remove_btn"):
             remove_item(index_to_remove)
-            st.rerun() # Odświeżenie aplikacji po usunięciu
+            st.rerun()
